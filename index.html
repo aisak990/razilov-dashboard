@@ -1,0 +1,427 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Razilov Holdings: 8-Property Status</title>
+<style>html,body{margin:0;background:#0B0F17;color:#E6E9F2;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}*{box-sizing:border-box}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+</head><body><div id="root"></div>
+<script type="text/plain" id="src">
+const { useState } = React; const useGrokTheme = () => {};
+type CSSProperties = React.CSSProperties; type ReactNode = React.ReactNode;
+
+type Group = "uc" | "offer" | "active" | "off";
+const STEPS = ["MLS", "Docs Signed", "Contract", "Deposit", "AR", "Appraisal", "Inspection", "LCTC", "HUD", "Closed"];
+
+type P = {
+  addr: string; short: string; occ: string; coAgent: string; status: string; sale: number | null;
+  steps: boolean[]; closeDate: string; mls: string; zstatus: string; dom: number | null;
+  views: number | null; saves: number | null; showings: number; offer: string; group: Group;
+};
+
+const props: P[] = [
+  { addr: "2 Hollywood Ave", short: "2 Hollywood", occ: "Vacant", coAgent: "Senol Onal", status: "Contract", sale: 181000, steps: [true, true, true, true, false, false, false, false, false, false], closeDate: "11/20/2026", mls: "NJME2084162", zstatus: "Accepting backups", dom: 33, views: 703, saves: 63, showings: 3, offer: "$165K backup held", group: "uc" },
+  { addr: "32 Elm St", short: "32 Elm", occ: "Occupied", coAgent: "Renee McDevitt", status: "Contract", sale: 194000, steps: [true, true, true, true, true, false, false, false, false, true], closeDate: "11/24/2026", mls: "NJME2084184", zstatus: "Accepting backups", dom: 28, views: 137, saves: 8, showings: 1, offer: "None", group: "uc" },
+  { addr: "14 Mechanics Ave", short: "14 Mechanics", occ: "Vacant", coAgent: "", status: "Active", sale: 168888, steps: [true, true, false, false, false, false, false, false, false, false], closeDate: "", mls: "NJME2082300", zstatus: "For sale", dom: 65, views: 298, saves: 22, showings: 2, offer: "$165K counter out on $160K FHA", group: "offer" },
+  { addr: "249 Tyler St", short: "249 Tyler", occ: "Vacant", coAgent: "", status: "Active", sale: 249888, steps: [true, false, false, false, false, false, false, false, false, false], closeDate: "", mls: "NJME2085350", zstatus: "For sale", dom: 15, views: 192, saves: 25, showings: 0, offer: "Align offer under review", group: "offer" },
+  { addr: "507 Bridge St", short: "507 Bridge", occ: "Vacant", coAgent: "", status: "Active", sale: 204888, steps: [true, false, false, false, false, false, false, false, false, false], closeDate: "", mls: "NJME2084104", zstatus: "For sale", dom: 15, views: 213, saves: 17, showings: 0, offer: "None", group: "active" },
+  { addr: "505 Tyler St", short: "505 Tyler", occ: "Occupied", coAgent: "", status: "Active", sale: 219888, steps: [true, true, false, false, false, false, false, false, false, false], closeDate: "", mls: "NJME2084108", zstatus: "For sale", dom: 44, views: 182, saves: 13, showings: 0, offer: "None", group: "active" },
+  { addr: "34 West End Ave", short: "34 West End", occ: "Occupied", coAgent: "", status: "Active", sale: 199888, steps: [true, true, false, false, false, false, false, false, false, false], closeDate: "", mls: "NJME2084118", zstatus: "For sale", dom: 44, views: 175, saves: 12, showings: 0, offer: "None", group: "active" },
+  { addr: "212 Fulton St", short: "212 Fulton", occ: "Vacant", coAgent: "", status: "Off the Market", sale: null, steps: [false, false, false, false, false, false, false, false, false, false], closeDate: "", mls: "None", zstatus: "Off market", dom: null, views: null, saves: null, showings: 0, offer: "None", group: "off" },
+];
+
+const C = {
+  bg: "#0B0F17", panel: "#121826", panel2: "#161D2D", line: "#222B3D", ink: "#E8ECF4", dim: "#8A94A8", faint: "#5B6478",
+  purple: "#8B5CF6", blue: "#3B6FE0", teal: "#3CC7A6", green: "#4ADE80", pink: "#E879F9", amber: "#F5B544",
+};
+const GROUP: Record<Group, { label: string; color: string }> = {
+  uc: { label: "Under contract", color: C.green },
+  offer: { label: "Pending offer", color: C.purple },
+  active: { label: "Active, no offer", color: C.blue },
+  off: { label: "Off market", color: C.faint },
+};
+const money = (n: number | null) => (n === null ? "None" : "$" + n.toLocaleString("en-US"));
+const k = (n: number | null) => (n === null ? "--" : "$" + Math.round(n / 1000) + "K");
+const listed = props.filter((p) => p.views !== null);
+
+function smooth(pts: [number, number][]) {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+
+function Area({ values, labels, color, id, fmt }: { values: number[]; labels: string[]; color: string; id: string; fmt: (n: number) => string }) {
+  const W = 800, H = 240, l = 48, r = 16, t = 16, b = 36;
+  const max = Math.max(...values) * 1.15;
+  const pts: [number, number][] = values.map((v, i) => [l + (i * (W - l - r)) / (values.length - 1), t + (1 - v / max) * (H - t - b)]);
+  const line = smooth(pts);
+  const area = `${line} L${pts[pts.length - 1][0]},${H - b} L${pts[0][0]},${H - b} Z`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+      <defs>
+        <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor={color} stopOpacity={0.35} />
+          <stop offset="1" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+        <g key={f}>
+          <line x1={l} x2={W - r} y1={t + f * (H - t - b)} y2={t + f * (H - t - b)} stroke={C.line} strokeDasharray="4 6" />
+          <text x={l - 10} y={t + f * (H - t - b) + 4} textAnchor="end" fontSize={12} fill={C.faint}>{fmt(Math.round(max * (1 - f)))}</text>
+        </g>
+      ))}
+      <path d={area} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth={3} />
+      {pts.map((p, i) => (
+        <g key={i}>
+          <circle cx={p[0]} cy={p[1]} r={4} fill={C.bg} stroke={color} strokeWidth={2} />
+          <text x={p[0]} y={p[1] - 12} textAnchor="middle" fontSize={12} fill={C.ink}>{fmt(values[i])}</text>
+          <text x={p[0]} y={H - 12} textAnchor="middle" fontSize={12} fill={C.dim}>{labels[i]}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function Spark({ values, color }: { values: number[]; color: string }) {
+  const W = 90, H = 30, max = Math.max(...values, 1);
+  const pts: [number, number][] = values.map((v, i) => [(i * W) / (values.length - 1), H - 4 - (v / max) * (H - 8)]);
+  return (
+    <svg width="90" height="30" viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0 }}>
+      <path d={smooth(pts)} fill="none" stroke={color} strokeWidth={2} />
+    </svg>
+  );
+}
+
+function Donut() {
+  const groups = (["uc", "offer", "active", "off"] as Group[]).map((g) => ({ g, n: props.filter((p) => p.group === g).length }));
+  const R = 70, sw = 26, circ = 2 * Math.PI * R;
+  let acc = 0;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <g transform="translate(90,90) rotate(-90)">
+          {groups.map(({ g, n }) => {
+            const len = (n / 8) * circ;
+            const el = <circle key={g} r={R} fill="none" stroke={GROUP[g].color} strokeWidth={sw} strokeDasharray={`${Math.max(len - 3, 0)} ${circ}`} strokeDashoffset={-acc} />;
+            acc += len;
+            return el;
+          })}
+        </g>
+        <text x={90} y={88} textAnchor="middle" fontSize={30} fontWeight={700} fill={C.ink}>2/8</text>
+        <text x={90} y={108} textAnchor="middle" fontSize={11} fill={C.dim}>UNDER CONTRACT</text>
+      </svg>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: "1 1 140px" }}>
+        {groups.map(({ g, n }) => (
+          <div key={g} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 99, background: GROUP[g].color }} />
+            <span style={{ color: C.dim, flex: 1 }}>{GROUP[g].label}</span>
+            <span style={{ color: C.ink, fontWeight: 600 }}>{n}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const card: CSSProperties = { background: C.panel, border: `1px solid ${C.line}`, borderRadius: 16, padding: 20, minWidth: 0 };
+const pill: CSSProperties = { border: `1px solid ${C.line}`, background: C.panel2, color: C.ink, borderRadius: 10, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
+
+function Card({ title, right, children, span }: { title: string; right?: ReactNode; children: ReactNode; span?: boolean }) {
+  return (
+    <div style={{ ...card, gridColumn: span ? "1 / -1" : undefined }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <div style={{ color: C.ink, fontSize: 16, fontWeight: 600 }}>{title}</div>
+        {right}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Icon({ kind, color }: { kind: string; color: string }) {
+  const paths: Record<string, ReactNode> = {
+    home: <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
+    list: <path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1" />,
+    flow: <path d="M4 18l5-6 4 4 7-9" />,
+    tag: <path d="M3 12V4h8l10 10-8 8z M7.5 7.5h.01" />,
+    eye: <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />,
+    users: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.9" />,
+    bell: <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10 21h4" />,
+    chart: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+    heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" />,
+    doc: <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" />,
+  };
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      {paths[kind]}
+    </svg>
+  );
+}
+
+const NAV = [
+  { id: "overview", label: "Overview", icon: "home" },
+  { id: "properties", label: "Properties", icon: "list" },
+  { id: "pipeline", label: "Deal Pipeline", icon: "flow" },
+  { id: "offers", label: "Offers", icon: "tag" },
+  { id: "zillow", label: "Zillow", icon: "eye" },
+  { id: "showings", label: "Showings", icon: "users" },
+  { id: "alerts", label: "Alerts", icon: "bell" },
+];
+
+function App() {
+  useGrokTheme();
+  const [tab, setTab] = useState<string>("overview");
+  const [metric, setMetric] = useState<string>("views");
+  const [filter, setFilter] = useState<Group | "all">("all");
+  const show = (id: string) => tab === "overview" || tab === id;
+  const totalViews = listed.reduce((s, p) => s + (p.views ?? 0), 0);
+  const totalSaves = listed.reduce((s, p) => s + (p.saves ?? 0), 0);
+  const kpis = [
+    { label: "Under Contract", value: "2 / 8", sub: "$375,000 total sale value", icon: "doc", color: C.green, bar: 2 / 8 },
+    { label: "Pending Offers", value: "2", sub: "14 Mechanics, 249 Tyler", icon: "tag", color: C.purple, bar: 2 / 6 },
+    { label: "Zillow Views", value: totalViews.toLocaleString("en-US"), sub: `${totalSaves} saves on 7 listings, bar is save rate`, icon: "eye", color: C.blue, bar: totalSaves / totalViews },
+    { label: "Days to Dec 25", value: "50", sub: "Target date, not a guarantee", icon: "chart", color: C.teal, bar: 50 / 365 },
+  ];
+  const rows = props.filter((p) => filter === "all" || p.group === filter);
+  const mVals = listed.map((p) => (metric === "views" ? p.views ?? 0 : p.saves ?? 0));
+
+  return (
+    <div style={{ background: C.bg, color: C.ink, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", minHeight: "100vh", padding: 16, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+        <aside style={{ ...card, flex: "0 1 220px", display: "flex", flexDirection: "column", gap: 6, padding: 14 }}>
+          <div style={{ padding: "6px 10px 16px", fontWeight: 700, fontSize: 16, letterSpacing: 0.3 }}>Razilov Holdings</div>
+          {NAV.map((n) => (
+            <button key={n.id} onClick={() => setTab(n.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", borderRadius: 10, border: tab === n.id ? `1px solid ${C.line}` : "1px solid transparent", background: tab === n.id ? C.panel2 : "transparent", color: tab === n.id ? C.ink : C.dim, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+              <Icon kind={n.icon} color={tab === n.id ? C.purple : C.dim} />
+              {n.label}
+            </button>
+          ))}
+          <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, background: C.panel2, border: `1px solid ${C.line}` }}>
+            <span style={{ color: C.purple, fontSize: 18 }}>✦</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13 }}>Data sync</div>
+              <div style={{ fontSize: 11, color: C.dim }}>Nov 5, 5:12 PM ET</div>
+            </div>
+            <span style={{ width: 18, height: 18, borderRadius: 99, background: C.green, color: C.bg, fontSize: 12, display: "grid", placeItems: "center", fontWeight: 700 }}>✓</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, background: C.panel2, border: `1px solid ${C.line}` }}>
+            <span style={{ width: 36, height: 36, borderRadius: 99, background: "#2A3246", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 600 }}>AI</span>
+            <div>
+              <div style={{ fontSize: 14 }}>Alex Isak</div>
+              <div style={{ fontSize: 11, color: C.dim }}>Listing agent</div>
+            </div>
+          </div>
+        </aside>
+
+        <main style={{ flex: "1 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 26, fontWeight: 600 }}>{NAV.find((n) => n.id === tab)?.label}</div>
+              <div style={{ fontSize: 14, color: C.dim, marginTop: 4 }}>Eight Trenton properties, goal: all under contract by Dec 25, 2026.</div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <span style={pill}>As of Nov 5, 2026</span>
+              <span style={pill}>Sources: Sheet, Bright MLS, Zillow, Gmail</span>
+            </div>
+          </div>
+
+          {tab === "overview" ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
+              {kpis.map((m) => (
+                <div key={m.label} style={card}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 10, background: m.color + "26", display: "grid", placeItems: "center" }}><Icon kind={m.icon} color={m.color} /></span>
+                    <span style={{ fontSize: 13, color: C.dim }}>{m.label}</span>
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 700 }}>{m.value}</div>
+                  <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>{m.sub}</div>
+                  <div style={{ height: 6, borderRadius: 99, background: C.line, marginTop: 14 }}>
+                    <div style={{ width: `${Math.max(m.bar * 100, 3)}%`, height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${C.blue}, ${m.color})` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {show("alerts") ? (
+            <div style={{ ...card, borderColor: C.amber + "66", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <Icon kind="bell" color={C.amber} />
+              <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 600, color: C.amber, marginBottom: 4 }}>32 Elm St close date doesn't match</div>
+                <div style={{ color: C.dim }}>Your sheet says 11/24/2026 with Closed checked. The attorney's Oct 30 summary says Dec 14, 2026, and appraisal and inspection aren't checked yet.</div>
+                {tab === "alerts" ? <div style={{ color: C.dim, marginTop: 8 }}>Price cut review: 507 Bridge, 505 Tyler and 34 West End have no offers and no showing feedback yet. Your decision; nothing changes in MLS unless you say so.</div> : null}
+              </div>
+            </div>
+          ) : null}
+
+          {show("zillow") ? (
+            <Card title={metric === "views" ? "Zillow Views by Property" : "Zillow Saves by Property"} right={
+              <div style={{ display: "flex", gap: 6 }}>
+                {["views", "saves"].map((m) => (
+                  <button key={m} onClick={() => setMetric(m)} style={{ ...pill, background: metric === m ? C.purple + "33" : C.panel2, borderColor: metric === m ? C.purple : C.line }}>{m === "views" ? "Views" : "Saves"}</button>
+                ))}
+              </div>
+            }>
+              <Area values={mVals} labels={listed.map((p) => p.short)} color={metric === "views" ? C.purple : C.teal} id="za" fmt={(n) => String(n)} />
+              <div style={{ fontSize: 12, color: C.faint, marginTop: 8 }}>Read from each Zillow listing page Nov 5, 5:05 PM ET. 212 Fulton is off market, so Zillow shows no counts.</div>
+            </Card>
+          ) : null}
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+            {show("pipeline") || show("properties") ? (
+              <Card title="Deal Status" right={<span style={pill}>By stage</span>}>
+                <Donut />
+              </Card>
+            ) : null}
+            {show("offers") ? (
+              <Card title="Offers & Closings" right={<span style={pill}>Live deals</span>}>
+                {[
+                  { a: "2 Hollywood Ave", d: "$181,000 cash, closing Nov 20", tag: "Contract", c: C.green },
+                  { a: "32 Elm St", d: "$194,000, closing 11/24 per sheet", tag: "Contract", c: C.green },
+                  { a: "14 Mechanics Ave", d: "$165K counter out on $160K FHA", tag: "Counter", c: C.purple },
+                  { a: "249 Tyler St", d: "Align offer 10/28, seller reviewing", tag: "Review", c: C.purple },
+                  { a: "2 Hollywood Ave", d: "$165,000 backup offer held", tag: "Backup", c: C.blue },
+                ].map((o, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: i ? `1px solid ${C.line}` : "none" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 99, background: o.c, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14 }}>{o.a}</div>
+                      <div style={{ fontSize: 12, color: C.dim }}>{o.d}</div>
+                    </div>
+                    <span style={{ fontSize: 11, color: o.c, border: `1px solid ${o.c}55`, borderRadius: 99, padding: "3px 9px" }}>{o.tag}</span>
+                  </div>
+                ))}
+              </Card>
+            ) : null}
+          </div>
+
+          {show("pipeline") ? (
+            <Card title="Deal Pipeline" right={<span style={pill}>From your sheet</span>}>
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ minWidth: 640 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: `150px repeat(${STEPS.length}, 1fr)`, gap: 4, fontSize: 11, color: C.faint, marginBottom: 8 }}>
+                    <span />
+                    {STEPS.map((s) => <span key={s} style={{ textAlign: "center" }}>{s}</span>)}
+                  </div>
+                  {props.map((p) => (
+                    <div key={p.addr} style={{ display: "grid", gridTemplateColumns: `150px repeat(${STEPS.length}, 1fr)`, gap: 4, alignItems: "center", padding: "8px 0", borderTop: `1px solid ${C.line}` }}>
+                      <div>
+                        <div style={{ fontSize: 13 }}>{p.short}</div>
+                        <div style={{ fontSize: 11, color: C.dim }}>{p.steps.filter(Boolean).length}/10{p.closeDate ? " · " + p.closeDate : ""}</div>
+                      </div>
+                      {p.steps.map((b, j) => (
+                        <div key={j} style={{ height: 8, borderRadius: 99, background: b ? `linear-gradient(90deg, ${C.blue}, ${C.purple})` : C.line }} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          ) : null}
+
+          {show("showings") ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+              <Card title="Showings with Feedback" right={<span style={pill}>ShowingTime</span>}>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 170, paddingTop: 10 }}>
+                  {props.filter((p) => p.group !== "off").map((p) => (
+                    <div key={p.addr} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
+                      <span style={{ fontSize: 12, color: C.ink }}>{p.showings}</span>
+                      <div style={{ width: "70%", height: `${Math.max(p.showings / 3, 0.03) * 120}px`, borderRadius: 6, background: `linear-gradient(180deg, ${C.purple}, ${C.blue})` }} />
+                      <span style={{ fontSize: 10, color: C.dim, textAlign: "center" }}>{p.short.replace(/^\d+ /, "")}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: C.faint, marginTop: 10 }}>Counted from feedback emails. Showings with no feedback don't appear.</div>
+              </Card>
+              <Card title="Latest Feedback" right={<span style={pill}>6 notes</span>}>
+                {[
+                  ["2 Hollywood · Oct 24", "Sean Onal: interest level Very", C.green],
+                  ["2 Hollywood · Oct 23", "Garcia Realtors: No, price too high, not mortgage ready", C.faint],
+                  ["2 Hollywood · Oct 12", "Sean Onal: interest level Somewhat", C.purple],
+                  ["32 Elm · Oct 9", "McDevitt (Redfin): interest level Somewhat", C.purple],
+                  ["14 Mechanics · Nov 2", "Chris Carter (HomeSmart): Maybe", C.purple],
+                  ["14 Mechanics · Oct 30", "Jose Rodriguez (Garcia Realtors): No", C.faint],
+                ].map(([t, d, c], i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "9px 0", borderTop: i ? `1px solid ${C.line}` : "none" }}>
+                    <span style={{ width: 4, borderRadius: 4, background: c }} />
+                    <div>
+                      <div style={{ fontSize: 13 }}>{t}</div>
+                      <div style={{ fontSize: 12, color: C.dim }}>{d}</div>
+                    </div>
+                  </div>
+                ))}
+              </Card>
+            </div>
+          ) : null}
+
+          {show("properties") ? (
+            <Card title="All Properties" right={
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {(["all", "uc", "offer", "active", "off"] as (Group | "all")[]).map((g) => (
+                  <button key={g} onClick={() => setFilter(g)} style={{ ...pill, background: filter === g ? C.purple + "33" : C.panel2, borderColor: filter === g ? C.purple : C.line }}>{g === "all" ? "All" : GROUP[g].label}</button>
+                ))}
+              </div>
+            }>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 820 }}>
+                  <thead>
+                    <tr>
+                      {["Address", "Occupancy", "Co-agent", "Status", "Sale", "Offer", "Date CL", "Views", "Saves", "Showings", "DOM", "MLS #"].map((h, i) => (
+                        <th key={h} style={{ textAlign: i < 4 || i === 5 ? "left" : "right", color: C.faint, fontWeight: 500, padding: "8px 10px", borderBottom: `1px solid ${C.line}`, whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((p) => (
+                      <tr key={p.addr}>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}` }}>
+                          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 99, background: GROUP[p.group].color, marginRight: 8 }} />{p.addr}
+                        </td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, color: C.dim }}>{p.occ}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, color: C.dim }}>{p.coAgent || "None"}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, color: GROUP[p.group].color }}>{p.status}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{money(p.sale)}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, color: C.dim }}>{p.offer}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{p.closeDate || "None"}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{p.views ?? "--"}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{p.saves ?? "--"}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{p.showings}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right" }}>{p.dom ?? "--"}</td>
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${C.line}`, textAlign: "right", color: C.dim }}>{p.mls}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : null}
+
+          {show("properties") ? (
+            <Card title="Sale Price by Property" right={<span style={pill}>From your sheet</span>}>
+              {props.filter((p) => p.sale !== null).sort((a, b) => (b.sale ?? 0) - (a.sale ?? 0)).map((p) => (
+                <div key={p.addr} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0" }}>
+                  <span style={{ width: 110, fontSize: 13, color: C.dim, flexShrink: 0 }}>{p.short}</span>
+                  <div style={{ flex: 1, height: 10, borderRadius: 99, background: C.line }}>
+                    <div style={{ width: `${((p.sale ?? 0) / 250000) * 100}%`, height: "100%", borderRadius: 99, background: GROUP[p.group].color }} />
+                  </div>
+                  <span style={{ width: 56, textAlign: "right", fontSize: 13 }}>{k(p.sale)}</span>
+                </div>
+              ))}
+            </Card>
+          ) : null}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+<script>eval(Babel.transform(document.getElementById("src").textContent,{filename:"app.tsx",presets:[["typescript",{isTSX:true,allExtensions:true}],"react"]}).code);</script></body></html>
